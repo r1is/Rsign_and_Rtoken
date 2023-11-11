@@ -2,9 +2,12 @@
 融通基金微信端、h5，Rsign和Rtoken js逆向，mitmproxy 脚本。 
 
 ## 依赖
+- 测试环境：python 3.11.6
+```bash
 pip install mitmproxy
 pip install gmssl
 pip install pycryptodome
+```
 
 ## 启动mitmproxy
 ```bash

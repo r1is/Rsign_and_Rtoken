@@ -8,12 +8,14 @@ import base64
 import urllib.parse
 from gmssl import sm3,func
 
+RT_HOST = "wx.rtfund.com"
 
 def request(flow: http.HTTPFlow) -> None:
     headers = flow.request.headers
     body = flow.request.content
+    host = flow.request.host
 
-    if flow.request.method == "POST":
+    if flow.request.method == "POST" and host == RT_HOST:
         headers['Rtoken'] = get_r_token()
         str_body = body.decode("utf-8")
         headers['Rsign'] = get_rt_sign(str_body)
@@ -22,18 +24,21 @@ def request(flow: http.HTTPFlow) -> None:
         print("Rtoken:",headers['Rtoken'])
         print("Rsign:",headers['Rsign'])
         print("body:",str_body)
+        print("=" * 50)
 
 def response(flow: http.HTTPFlow) -> None:
-    print("Response intercepted:")
-    print(f"URL: {flow.request.url}")
-    print(f"Status Code: {flow.response.status_code}")
-    print("Headers:")
-    for key, value in flow.response.headers.items():
-        print(f"  {key}: {value}")
-    print("Content:")
-    print(flow.response.content.decode("utf-8", "replace"))
-    print("=" * 50)
-
+    host = flow.request.host
+    if host == RT_HOST:
+        print("Response intercepted:")
+        print(f"URL: {flow.request.url}")
+        print(f"Status Code: {flow.response.status_code}")
+        print("Headers:")
+        for key, value in flow.response.headers.items():
+            print(f"  {key}: {value}")
+        print("Content:")
+        print(flow.response.content.decode("utf-8", "replace"))
+        print("=" * 50)
+    
 def AES_CBC_PKCS7(text,key = 'B49A86FA425D439d', iv = 'B49A86FA425D439d'):
     """
     text : 需要加密的明文
@@ -47,12 +52,8 @@ def AES_CBC_PKCS7(text,key = 'B49A86FA425D439d', iv = 'B49A86FA425D439d'):
     ciphertext = cipher.encrypt(padded_text)
     return base64.b64encode(ciphertext).decode()
 
-def generate_random(length):
-    characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    result = ""
-    for _ in range(length):
-        result += random.choice(characters)
-    return result
+# 随机字符串生成
+generate_random = lambda n: "".join(random.choice("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ") for _ in range(n))
 
 def get_r_token():
     try:
@@ -75,3 +76,7 @@ def get_rt_sign(n):
     data_byte = sorted_str.encode('utf-8')
     hash_data = sm3.sm3_hash(func.bytes_to_list(data_byte))
     return hash_data
+
+if __name__ == "__main__":
+    print(get_r_token())
+    print(get_rt_sign("123"))
